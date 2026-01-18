@@ -1,32 +1,55 @@
 package ru.top.financeapi.model;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
-@Entity // 1. Говорит JPA, что это сущность, которую нужно сохранять в БД
-@Table(name = "transactions") // 2. (Опционально) Указывает, что таблица в БД будет называться "transactions"
+/**
+ * JPA-сущность, представляющая финансовую транзакцию.
+ */
+@Entity
+@Table(name = "transactions") // Явно указываем имя таблицы в базе данных
 public class Transaction {
 
-    @Id // 3. Помечает это поле как первичный ключ (Primary Key)
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // 4. Говорит, что БД будет сама генерировать значение этого поля (например, автоинкремент)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
-    private double amount;
+    @Column(name = "description", nullable = false)
     private String description;
 
-    // Важно: JPA требует наличие конструктора без аргументов
+    // Использование BigDecimal - лучшая практика для финансовых данных,
+    // чтобы избежать ошибок округления, свойственных float/double.
+    // precision - общее количество цифр, scale - количество цифр после запятой.
+    @Column(name = "amount", nullable = false, precision = 19, scale = 2)
+    private BigDecimal amount;
+
+    // LocalDate - современный и правильный тип для хранения даты без времени.
+    @Column(name = "date", nullable = false)
+    private LocalDate date;
+
+    /**
+     * JPA требует конструктор без аргументов для создания экземпляров.
+     */
     public Transaction() {
     }
 
-    // Ваши остальные конструкторы, геттеры и сеттеры...
-    public Transaction(Long id, double amount, String description) {
-        this.id = id;
-        this.amount = amount;
+    /**
+     * Удобный конструктор для создания объектов в коде.
+     */
+    public Transaction(String description, BigDecimal amount, LocalDate date) {
         this.description = description;
+        this.amount = amount;
+        this.date = date;
     }
+
+    // --- Геттеры и Сеттеры ---
 
     public Long getId() {
         return id;
@@ -36,19 +59,27 @@ public class Transaction {
         this.id = id;
     }
 
-    public double getAmount() {
-        return amount;
-    }
-
-    public void setAmount(double amount) {
-        this.amount = amount;
-    }
-
     public String getDescription() {
         return description;
     }
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    public LocalDate getDate() {
+        return date;
+    }
+
+    public void setDate(LocalDate date) {
+        this.date = date;
     }
 }
