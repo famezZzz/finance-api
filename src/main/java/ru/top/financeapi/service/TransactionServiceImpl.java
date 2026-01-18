@@ -2,58 +2,61 @@ package ru.top.financeapi.service;
 
 import org.springframework.stereotype.Service;
 import ru.top.financeapi.model.Transaction;
+import ru.top.financeapi.repository.TransactionRepository; // 1. Импортируем наш репозиторий
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
-@Service // 1. Помечаем класс как Spring-компонент (сервис)
+@Service
 public class TransactionServiceImpl implements TransactionService {
 
-    // 2. Вся логика и "база данных" теперь здесь, а не в контроллере
-    private final ConcurrentHashMap<Long, Transaction> transactions = new ConcurrentHashMap<>();
-    private final AtomicLong counter = new AtomicLong();
+    // 2. Внедряем зависимость от репозитория (вместо ConcurrentHashMap)
+    private final TransactionRepository transactionRepository;
 
-    public TransactionServiceImpl() {
-        // Начальные данные для примера
-        long id1 = counter.incrementAndGet();
-        transactions.put(id1, new Transaction(id1, 100.50, "Покупка продуктов"));
-        long id2 = counter.incrementAndGet();
-        transactions.put(id2, new Transaction(id2, 75.00, "Оплата интернета"));
+    // 3. Spring автоматически "подставит" нужную реализацию через конструктор
+    public TransactionServiceImpl(TransactionRepository transactionRepository) {
+        this.transactionRepository = transactionRepository;
     }
 
     @Override
     public List<Transaction> getAll() {
-        return new ArrayList<>(transactions.values());
+        // 4. Просто делегируем вызов репозиторию
+        return transactionRepository.findAll();
     }
 
     @Override
     public Optional<Transaction> getById(Long id) {
-        return Optional.ofNullable(transactions.get(id));
+        return transactionRepository.findById(id);
     }
 
     @Override
     public Transaction create(Transaction transaction) {
-        long newId = counter.incrementAndGet();
-        transaction.setId(newId);
-        transactions.put(newId, transaction);
-        return transaction;
+        // Метод save() создаст новую запись, если id у транзакции null,
+        // и вернет сущность с уже присвоенным базой данных ID.
+        return transactionRepository.save(transaction);
     }
 
     @Override
-    public Optional<Transaction> update(Long id, Transaction updatedTransaction) {
-        if (!transactions.containsKey(id)) {
-            return Optional.empty(); // Возвращаем пустой Optional, если транзакции нет
-        }
-        updatedTransaction.setId(id);
-        transactions.put(id, updatedTransaction);
-        return Optional.of(updatedTransaction);
+    public Optional<Transaction> update(Long id, Transaction transactionDetails) {
+        // Ищем существующую транзакцию по id
+        return transactionRepository.findById(id)
+                .map(existingTransaction -> { // Если она найдена...
+                    // ...обновляем ее поля данными из запроса
+                    existingTransaction.setDescription(transactionDetails.getDescription());
+                    existingTransaction.setAmount(transactionDetails.getAmount());
+                    existingTransaction.setDate(transactionDetails.getDate());
+                    // ...и сохраняем изменения в БД
+                    return transactionRepository.save(existingTransaction);
+                });
     }
 
     @Override
     public boolean delete(Long id) {
-        return transactions.remove(id) != null;
+        // Проверяем, существует ли запись, перед удалением
+        if (transactionRepository.existsById(id)) {
+            transactionRepository.deleteById(id);
+            return true;
+        }
+        return false;
     }
 }
