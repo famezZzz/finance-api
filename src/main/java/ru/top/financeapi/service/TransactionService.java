@@ -1,31 +1,18 @@
 package ru.top.financeapi.service;
 
 import ru.top.financeapi.model.Transaction;
-import ru.top.financeapi.repository.TransactionRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 
-@Service
-@RequiredArgsConstructor // Lombok аннотация для создания конструктора
-public class TransactionService {
+public interface TransactionService {
 
-    private final TransactionRepository transactionRepository;
+    List<Transaction> getAll();
 
-    public List<Transaction> getAllTransactions() {
-        return transactionRepository.findAll();
-    }
+    Optional<Transaction> getById(Long id);
 
-    public Optional<Transaction> getTransactionById(Long id) {
-        return transactionRepository.findById(id);
-    }
+    Transaction create(Transaction transaction);
 
-    public Transaction saveTransaction(Transaction transaction) {
-        return transactionRepository.save(transaction);
-    }
+    Optional<Transaction> update(Long id, Transaction transaction);
 
-    public void deleteTransaction(Long id) {
-        transactionRepository.deleteById(id);
-    }
+    boolean delete(Long id);
 }
